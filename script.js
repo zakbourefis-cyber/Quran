@@ -9,9 +9,33 @@ const hadithsList = [
     { text: "Celui qui ne remercie pas les gens n'a pas remercié Allah.", source: "Abou Daoud" },
     { text: "Le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne.", source: "Bukhari" },
     { text: "La propreté est la moitié de la foi.", source: "Muslim" },
-    { text: "Souriez est une aumône.", source: "Tirmidhi" }
+    { text: "Sourire est une aumône.", source: "Tirmidhi" },
+    { text: "La parole bienveillante est une aumône.", source: "Bukhari et Muslim" },
+    { text: "Nulle fatigue, nulle maladie, nul souci, nulle tristesse, nul mal n'atteint le musulman sans que Dieu ne lui expie par cela de ses péchés.", source: "Bukhari" },
+    { text: "Celui qui croit en Allah et au Jour dernier, qu'il dise du bien ou qu'il se taise.", source: "Bukhari et Muslim" },
+    { text: "Craignez Allah où que vous soyez, faites suivre la mauvaise action par une bonne qui l'effacera, et comportez-vous avec les gens de belle manière.", source: "Tirmidhi" },
+    { text: "L'homme fort n'est pas celui qui terrasse ses adversaires, mais celui qui se maîtrise lors de la colère.", source: "Bukhari" },
+    { text: "Dieu ne regarde ni vos corps ni vos images, mais Il regarde vos cœurs et vos actes.", source: "Muslim" },
+    { text: "La pudeur ne vient qu'avec le bien.", source: "Bukhari et Muslim" },
+    { text: "Aime pour ton frère ce que tu aimes pour toi-même.", source: "Bukhari et Muslim" },
+    { text: "Celui qui rompt les liens de parenté n'entrera pas au Paradis.", source: "Muslim" },
+    { text: "Facilitez les choses et ne les compliquez pas, annoncez la bonne nouvelle et ne faites pas fuir les gens.", source: "Bukhari" },
+    { text: "Méfiez-vous de la suspicion, car la suspicion est la parole la plus mensongère.", source: "Bukhari" },
+    { text: "Le croyant n'est pas celui qui mange à satiété alors que son voisin a faim.", source: "Al-Albani" },
+    { text: "Les actions ne valent que par les intentions.", source: "Bukhari et Muslim" },
+    { text: "Ne vous mettez pas en colère.", source: "Bukhari" },
+    { text: "Celui qui emprunte un chemin à la recherche du savoir, Allah lui facilite un chemin vers le Paradis.", source: "Muslim" },
+    { text: "La douceur n'est jamais présente dans une chose sans qu'elle ne l'embellisse.", source: "Muslim" },
+    { text: "Le musulman est celui dont les gens sont à l'abri de sa langue et de sa main.", source: "Bukhari" },
+    { text: "Donnez à l'ouvrier son salaire avant que sa sueur ne sèche.", source: "Ibn Majah" },
+    { text: "La meilleure des aumônes est de donner de l'eau à boire.", source: "Ahmad" },
+    { text: "Échangez des cadeaux, vous vous aimerez.", source: "Al-Bukhari (Al-Adab Al-Mufrad)" },
+    { text: "Le bas-monde est une prison pour le croyant et un paradis pour le mécréant.", source: "Muslim" },
+    { text: "Allah est Beau et Il aime la beauté.", source: "Muslim" },
+    { text: "Celui qui montre la voie vers une bonne action a la même récompense que celui qui la fait.", source: "Muslim" },
+    { text: "Profite de cinq choses avant cinq autres : ta jeunesse avant ta vieillesse, ta santé avant ta maladie, ta richesse avant ta pauvreté, ton temps libre avant ton occupation et ta vie avant ta mort.", source: "Al-Hakim" },
+    { text: "Le meilleur des hommes est celui qui est le plus utile aux autres.", source: "Tabarani" }
 ];
-
 const container = document.getElementById('surah-container');
 const modal = document.getElementById('verse-modal');
 const modalBody = document.getElementById('modal-body');
@@ -24,7 +48,7 @@ const welcomeMsg = document.getElementById('welcome-msg');
 
 // --- 1. DÉMARRAGE ---
 document.addEventListener('DOMContentLoaded', async () => {
-    afficherHadithDuJour();
+    initHadithSystem();
     await checkSession(); // Vérifier qui est là
     await getSurahs();    // Charger le Coran
 });
@@ -235,17 +259,37 @@ function closeModal() {
 window.onclick = function(event) { if (event.target == modal) closeModal(); }
 
 // --- FONCTION HADITH ---
-function afficherHadithDuJour() {
+function afficherHadith() {
     const textEl = document.getElementById('hadith-text');
     const sourceEl = document.getElementById('hadith-source');
     
-    // Protection si l'élément n'existe pas
     if(!textEl || !sourceEl) return;
 
-    // Choix aléatoire
-    const index = Math.floor(Math.random() * hadithsList.length);
-    const h = hadithsList[index];
+    const h = hadithsList[currentHadithIndex];
 
+    // Mise à jour du texte
     textEl.innerText = `"${h.text}"`;
     sourceEl.innerText = `- Rapporté par ${h.source}`;
+}
+// Variable pour savoir où on en est
+let currentHadithIndex = 0;
+
+function initHadithSystem() {
+    const container = document.getElementById('hadith-container');
+    
+    if (container) {
+        // 1. Choisir un index de départ aléatoire
+        currentHadithIndex = Math.floor(Math.random() * hadithsList.length);
+        afficherHadith();
+
+        // 2. Ajouter l'événement "clic" pour passer au suivant
+        container.onclick = function() {
+            // Passer à l'index suivant (le module % permet de revenir à 0 à la fin de la liste)
+            currentHadithIndex = (currentHadithIndex + 1) % hadithsList.length;
+            afficherHadith();
+        };
+        
+        // Petit message au survol pour guider l'utilisateur
+        container.title = "Cliquez pour lire un autre hadith";
+    }
 }
