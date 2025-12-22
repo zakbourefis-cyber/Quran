@@ -389,7 +389,7 @@ h1 {
 footer {
     text-align: center;
     margin-top: 60px;          /* Espace entre les sourates et le footer */
-    padding: 30px 20px;
+    padding: 10px 5px;
     border-top: 1px solid #e0e0e0; /* Fine ligne grise de séparation */
     background-color: white;   /* Fond blanc pour faire propre */
     color: #666;               /* Texte gris doux */

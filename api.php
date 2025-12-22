@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
-$conn = new mysqli("localhost", "root", "", "quran_app");
+$conn = new mysqli("mysql-zakzik74.alwaysdata.net", "zakzik74", "Agbdlcid74300?", "zakzik74_quran_app");
 $method = $_SERVER['REQUEST_METHOD'];
 $input = json_decode(file_get_contents('php://input'), true);
 

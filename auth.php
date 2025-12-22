@@ -1,7 +1,7 @@
 <?php
 session_start();
 header("Content-Type: application/json");
-$conn = new mysqli("localhost", "root", "", "quran_app");
+$conn = new mysqli("mysql-zakzik74.alwaysdata.net", "zakzik74", "Agbdlcid74300?", "zakzik74_quran_app");
 
 $data = json_decode(file_get_contents('php://input'), true);
 $action = isset($_GET['action']) ? $_GET['action'] : '';
