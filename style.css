@@ -122,3 +122,37 @@ h1 { color: var(--primary-color); margin-bottom: 10px;}
 }
 
 .verse-fr { font-size: 1.1em; color: #555; line-height: 1.6em; }
+/* --- STYLE AUTHENTIFICATION --- */
+#auth-container {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    max-width: 400px;
+    margin: 0 auto 20px auto;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.auth-input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-right: 5px;
+    width: 140px;
+}
+
+.btn-auth {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    transition: opacity 0.2s;
+}
+.btn-auth:hover { opacity: 0.9; }
+
+.login { background-color: #2E7D32; }   /* Vert */
+.register { background-color: #1976D2; } /* Bleu */
+.logout { background-color: #d32f2f; margin-left: 10px; } /* Rouge */
+
+#user-info { font-weight: bold; color: #333; }
