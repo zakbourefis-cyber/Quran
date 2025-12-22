@@ -4,6 +4,14 @@ let favorites = [];
 let currentAudio = null;
 let isLoggedIn = false;
 
+const hadithsList = [
+    { text: "La richesse ne dépend pas de la quantité de biens, mais la richesse est la richesse de l'âme.", source: "Bukhari et Muslim" },
+    { text: "Celui qui ne remercie pas les gens n'a pas remercié Allah.", source: "Abou Daoud" },
+    { text: "Le meilleur d'entre vous est celui qui apprend le Coran et l'enseigne.", source: "Bukhari" },
+    { text: "La propreté est la moitié de la foi.", source: "Muslim" },
+    { text: "Souriez est une aumône.", source: "Tirmidhi" }
+];
+
 const container = document.getElementById('surah-container');
 const modal = document.getElementById('verse-modal');
 const modalBody = document.getElementById('modal-body');
@@ -16,6 +24,7 @@ const welcomeMsg = document.getElementById('welcome-msg');
 
 // --- 1. DÉMARRAGE ---
 document.addEventListener('DOMContentLoaded', async () => {
+    afficherHadithDuJour();
     await checkSession(); // Vérifier qui est là
     await getSurahs();    // Charger le Coran
 });
@@ -224,3 +233,19 @@ function closeModal() {
 }
 
 window.onclick = function(event) { if (event.target == modal) closeModal(); }
+
+// --- FONCTION HADITH ---
+function afficherHadithDuJour() {
+    const textEl = document.getElementById('hadith-text');
+    const sourceEl = document.getElementById('hadith-source');
+    
+    // Protection si l'élément n'existe pas
+    if(!textEl || !sourceEl) return;
+
+    // Choix aléatoire
+    const index = Math.floor(Math.random() * hadithsList.length);
+    const h = hadithsList[index];
+
+    textEl.innerText = `"${h.text}"`;
+    sourceEl.innerText = `- Rapporté par ${h.source}`;
+}

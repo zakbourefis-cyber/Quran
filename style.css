@@ -75,6 +75,7 @@ h1 {
     font-weight: bold;
     color: #333;
     font-size: 0.95em;
+    text-transform: capitalize; /* <--- AJOUTER CECI (Met la 1ère lettre en majuscule) */
 }
 
 /* Bouton Déconnexion (Petit icône discret) */
@@ -332,4 +333,51 @@ h1 {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- AJOUTER TOUT CECI À LA FIN DU FICHIER --- */
+
+/* --- STYLE DU HADITH (Style Carte) --- */
+.hadith-card {
+    background: white;
+    border-radius: 12px;           /* Coins arrondis comme les sourates */
+    padding: 30px;                 /* Un peu plus d'espace interne */
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Même ombre */
+    border-top: 5px solid var(--primary-color); /* La fameuse ligne verte */
+    
+    max-width: 800px;              /* Largeur max pour faire joli */
+    margin: 0 auto 40px auto;      /* Centré horizontalement + marge bas */
+    text-align: center;            /* Texte centré */
+    transition: transform 0.2s;    /* Petite animation si on veut */
+}
+
+.hadith-card:hover {
+    transform: translateY(-2px);   /* Petit effet au survol */
+}
+
+.hadith-card h3 {
+    margin-top: 0;
+    font-size: 1.1em;
+    color: var(--primary-color);   /* Titre en vert */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
+
+.hadith-card blockquote {
+    font-family: 'Segoe UI', sans-serif; /* Ou 'Amiri' si vous préférez le style arabe */
+    font-size: 1.2em;
+    font-style: italic;
+    color: #333;
+    margin: 0 0 15px 0;
+    line-height: 1.6;
+}
+
+.hadith-card cite {
+    display: block;
+    font-size: 0.9em;
+    color: #777;
+    font-weight: bold;
+    font-style: normal;
 }
