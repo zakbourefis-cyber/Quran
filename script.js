@@ -27,7 +27,6 @@ async function checkSession() {
         const res = await fetch('auth.php?action=check');
         const data = await res.json();
         
-        // Récupération des éléments HTML
         const btnLink = document.getElementById('btn-login-link');
         const userDiv = document.getElementById('user-logged-in');
         const msgSpan = document.getElementById('welcome-msg');
@@ -36,26 +35,30 @@ async function checkSession() {
         if (data.logged_in) {
             isLoggedIn = true;
             
-            // Affichage UI Connecté
             if(btnLink) btnLink.style.display = 'none';
-            if(userDiv) userDiv.style.display = 'flex'; // Important: flex pour aligner image et texte
-            
-            // Mise à jour du texte
+            if(userDiv) userDiv.style.display = 'flex';
             if(msgSpan) msgSpan.innerText = data.username;
+
+// --- MISE À JOUR : On utilise l'avatar de la BDD ---
             if(avatarImg) {
-                avatarImg.src = `https://ui-avatars.com/api/?name=${data.username}&background=2E7D32&color=fff&bold=true`;
+                // Si l'utilisateur n'a pas choisi (default) ou si c'est vide
+                if (data.avatar === 'default' || !data.avatar) {
+                    // ON GÉNÈRE UN CHAT UNIQUE BASÉ SUR SON PSEUDO
+                    avatarImg.src = `https://robohash.org/${data.username}?set=set4`;
+                } else {
+                    // Sinon, on affiche le chat qu'il a choisi dans la grille
+                    avatarImg.src = data.avatar;
+                }
             }
 
             loadFavorites();
         } else {
             isLoggedIn = false;
-            // Affichage UI Visiteur
             if(btnLink) btnLink.style.display = 'inline-block';
             if(userDiv) userDiv.style.display = 'none';
         }
     } catch (e) { console.error("Erreur auth", e); }
 }
-
 async function logout() {
     await fetch('auth.php?action=logout');
     window.location.reload(); // Recharger la page pour remettre à zéro

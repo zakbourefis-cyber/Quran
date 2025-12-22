@@ -5,8 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Le Saint Coran</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS SPÉCIFIQUE POUR LA SÉLECTION D'AVATAR */
+        .avatar-grid {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .avatar-option {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+            background-color: #eee;
+        }
+
+        .avatar-option:hover { transform: scale(1.1); }
+        
+        /* Style quand une image est sélectionnée */
+        .avatar-option.selected {
+            border-color: #2E7D32;
+            transform: scale(1.15);
+            box-shadow: 0 0 10px rgba(46, 125, 50, 0.4);
+        }
+    </style>
 </head>
 <body class="login-body">
 
@@ -14,8 +42,8 @@
         <h2 style="color:var(--primary-color); margin-bottom: 20px;">Bienvenue</h2>
         
         <div class="tabs">
-            <div class="tab active" onclick="switchTab('login')">Se connecter</div>
-            <div class="tab" onclick="switchTab('register')">S'inscrire</div>
+            <div class="tab active" onclick="switchTab('login')">Connexion</div>
+            <div class="tab" onclick="switchTab('register')">Inscription</div>
         </div>
 
         <div id="login-form" class="form-content active">
@@ -27,7 +55,7 @@
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="login-pass" placeholder="Mot de passe">
             </div>
-            <button class="btn-full" onclick="handleLogin()">Entrer</button>
+            <button class="btn-full" onclick="handleLogin()">Se connecter</button>
         </div>
 
         <div id="register-form" class="form-content">
@@ -39,22 +67,73 @@
                 <i class="fa-solid fa-lock"></i>
                 <input type="password" id="reg-pass" placeholder="Choisir un mot de passe">
             </div>
+
+            <p style="font-size:0.9em; color:#666; margin-bottom:10px;">Choisissez votre avatar :</p>
+            <div class="avatar-grid" id="avatar-selector">
+                </div>
+            <input type="hidden" id="selected-avatar-url" value="">
+
             <button class="btn-full btn-blue" onclick="handleRegister()">Créer mon compte</button>
         </div>
 
-        <a href="index.html" class="back-link">← Retour au Coran sans se connecter</a>
+        <a href="index.html" class="back-link">← Retour au site</a>
     </div>
 
     <script>
-        // --- LOGIQUE INTERNE DE LA PAGE LOGIN ---
+        // --- 1. CONFIGURATION DES AVATARS ---
+// Liste de 18 Chats uniques (Robohash set 4)
+        const avatars = [
+            "https://robohash.org/Mimi?set=set4",
+            "https://robohash.org/Felix?set=set4",
+            "https://robohash.org/Simba?set=set4",
+            "https://robohash.org/Zorro?set=set4",
+            "https://robohash.org/Luna?set=set4",
+            "https://robohash.org/Nala?set=set4",
+            "https://robohash.org/Grisou?set=set4",
+            "https://robohash.org/Tigrou?set=set4",
+            "https://robohash.org/Oreo?set=set4",
+            "https://robohash.org/Moustache?set=set4",
+            "https://robohash.org/Garfield?set=set4",
+            "https://robohash.org/Perle?set=set4",
+            "https://robohash.org/Caramel?set=set4",
+            "https://robohash.org/Minou?set=set4",
+            "https://robohash.org/Lucky?set=set4",
+            "https://robohash.org/Rio?set=set4",
+            "https://robohash.org/Chipie?set=set4",
+            "https://robohash.org/Salem?set=set4"
+        ];
 
-        // 1. Gestion des Onglets
+        // Générer la grille au chargement
+        const grid = document.getElementById('avatar-selector');
+        const hiddenInput = document.getElementById('selected-avatar-url');
+
+        // Sélectionner le premier par défaut
+        hiddenInput.value = "";
+
+        avatars.forEach((url, index) => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'avatar-option';
+            if (index === 0) img.classList.add('selected'); // Le premier est sélectionné par défaut
+
+            // Au clic sur une image
+            img.onclick = function() {
+                // On enlève la classe 'selected' de toutes les images
+                document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+                // On l'ajoute à celle cliquée
+                img.classList.add('selected');
+                // On sauvegarde l'URL dans le champ caché
+                hiddenInput.value = url;
+            };
+            grid.appendChild(img);
+        });
+
+        // --- 2. FONCTIONS (Login / Register / Tabs) ---
+        
         function switchTab(tab) {
-            // Reset classes
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
 
-            // Activate select
             if (tab === 'login') {
                 document.querySelectorAll('.tab')[0].classList.add('active');
                 document.getElementById('login-form').classList.add('active');
@@ -64,12 +143,11 @@
             }
         }
 
-        // 2. Connexion
         async function handleLogin() {
             const user = document.getElementById('login-user').value;
             const pass = document.getElementById('login-pass').value;
 
-            if(!user || !pass) return alert("Veuillez remplir les champs");
+            if(!user || !pass) return alert("Remplissez tout !");
 
             const res = await fetch('auth.php?action=login', {
                 method: 'POST',
@@ -79,32 +157,35 @@
             const data = await res.json();
 
             if (data.success) {
-                // Redirection vers l'accueil
                 window.location.href = 'index.html';
             } else {
-                alert("Erreur : " + data.message);
+                alert(data.message);
             }
         }
 
-        // 3. Inscription
         async function handleRegister() {
             const user = document.getElementById('reg-user').value;
             const pass = document.getElementById('reg-pass').value;
+            const avatar = document.getElementById('selected-avatar-url').value; // On récupère l'avatar choisi
 
-            if(!user || !pass) return alert("Veuillez remplir les champs");
+            if(!user || !pass) return alert("Remplissez tout !");
 
             const res = await fetch('auth.php?action=register', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ username: user, password: pass })
+                body: JSON.stringify({ 
+                    username: user, 
+                    password: pass,
+                    avatar: avatar // On envoie l'avatar au PHP
+                })
             });
             const data = await res.json();
 
             if (data.success) {
-                alert("Compte créé avec succès ! Connectez-vous maintenant.");
-                switchTab('login'); // On bascule sur l'onglet connexion
+                alert("Compte créé !");
+                switchTab('login');
             } else {
-                alert("Erreur : " + data.message);
+                alert(data.message);
             }
         }
     </script>
