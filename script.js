@@ -27,18 +27,31 @@ async function checkSession() {
         const res = await fetch('auth.php?action=check');
         const data = await res.json();
         
+        // Récupération des éléments HTML
+        const btnLink = document.getElementById('btn-login-link');
+        const userDiv = document.getElementById('user-logged-in');
+        const msgSpan = document.getElementById('welcome-msg');
+        const avatarImg = document.getElementById('user-avatar');
+
         if (data.logged_in) {
             isLoggedIn = true;
-            // Interface Connecté
-            if(btnLoginLink) btnLoginLink.style.display = 'none';
-            if(userLoggedInDiv) userLoggedInDiv.style.display = 'inline-block';
-            if(welcomeMsg) welcomeMsg.innerText = `Salam, ${data.username}`;
+            
+            // Affichage UI Connecté
+            if(btnLink) btnLink.style.display = 'none';
+            if(userDiv) userDiv.style.display = 'flex'; // Important: flex pour aligner image et texte
+            
+            // Mise à jour du texte
+            if(msgSpan) msgSpan.innerText = data.username;
+            if(avatarImg) {
+                avatarImg.src = `https://ui-avatars.com/api/?name=${data.username}&background=2E7D32&color=fff&bold=true`;
+            }
+
             loadFavorites();
         } else {
             isLoggedIn = false;
-            // Interface Visiteur
-            if(btnLoginLink) btnLoginLink.style.display = 'inline-block';
-            if(userLoggedInDiv) userLoggedInDiv.style.display = 'none';
+            // Affichage UI Visiteur
+            if(btnLink) btnLink.style.display = 'inline-block';
+            if(userDiv) userDiv.style.display = 'none';
         }
     } catch (e) { console.error("Erreur auth", e); }
 }

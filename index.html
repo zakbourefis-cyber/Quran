@@ -1,51 +1,26 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <title>Répertoire du Coran</title>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
-</head>
-<body>
-
-    <header>
-        <h1>Le Saint Coran</h1>
+<header>
+    <h1>Le Saint Coran</h1>
+    
+    <div id="user-area">
         
-        <div id="user-area" style="margin-bottom: 20px;">
+        <a href="login.html" id="btn-login-link" class="btn-login-header">
+            <i class="fa-solid fa-user"></i> Se connecter
+        </a>
+
+        <div id="user-logged-in" style="display:none;">
+            <span id="welcome-msg"></span>
             
-            <a href="login.html" id="btn-login-link" class="btn-filter" style="background:#2E7D32; color:white; text-decoration:none;">
-                <i class="fa-solid fa-user"></i> Se connecter
-            </a>
-
-            <div id="user-logged-in" style="display:none;">
-                <span id="welcome-msg" style="font-weight:bold; margin-right:10px;"></span>
-                <button onclick="logout()" class="btn-filter" style="background:#d32f2f; color:white;">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </div>
-
+            <img id="user-avatar" src="" alt="Profil" class="avatar">
+            
+            <button onclick="logout()" class="btn-logout-icon" title="Se déconnecter">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
         </div>
 
-        <div class="controls">
-            <button class="btn-filter active" onclick="filterSurahs('all')">Toutes</button>
-            <button class="btn-filter" onclick="filterSurahs('fav')">Mes Favoris ❤</button>
-        </div>
-    </header>
-
-    <div id="surah-container"></div>
-
-    <div id="verse-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title" style="margin:0; color:var(--primary-color);">Titre</h2>
-                <span class="close-btn" onclick="closeModal()">&times;</span>
-            </div>
-            <div id="modal-body" class="modal-body"></div>
-        </div>
     </div>
 
-    <script src="script.js"></script>
-</body>
-</html>
+    <div class="controls">
+        <button class="btn-filter active" onclick="filterSurahs('all')">Toutes</button>
+        <button class="btn-filter" onclick="filterSurahs('fav')">Mes Favoris ❤</button>
+    </div>
+</header>
