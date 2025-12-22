@@ -54,24 +54,34 @@ function renderSurahs(list) {
 }
 
 // 3. Gestion des Favoris (LocalStorage)
-function toggleFavorite(event, id) {
-    event.stopPropagation(); // Important : ne pas ouvrir la modale
+async function toggleFavorite(event, id) {
+    event.stopPropagation(); // Empêche d'ouvrir la modale
     
+    // 1. Mise à jour visuelle immédiate (pour que ce soit réactif)
     if (favorites.includes(id)) {
-        favorites = favorites.filter(favId => favId !== id); // Retirer
+        favorites = favorites.filter(favId => favId !== id);
     } else {
-        favorites.push(id); // Ajouter
+        favorites.push(id);
     }
     
-    // Sauvegarder dans le navigateur
-    localStorage.setItem('quranFavorites', JSON.stringify(favorites));
-    
-    // Rafraîchir l'affichage selon le filtre actuel
+    // Rafraîchir l'icône tout de suite
     const activeFilter = document.querySelector('.btn-filter.active').innerText;
     if (activeFilter.includes('Favoris')) {
         filterSurahs('fav');
     } else {
         renderSurahs(allSurahs);
+    }
+
+    // 2. Envoi à la base de données (en arrière-plan)
+    try {
+        await fetch('api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ surah_id: id })
+        });
+    } catch (error) {
+        console.error("Erreur sauvegarde MySQL:", error);
+        alert("Impossible de sauvegarder le favori !");
     }
 }
 
@@ -175,5 +185,18 @@ window.onclick = function(event) {
     if (event.target == modal) closeModal();
 }
 
+async function loadFavorites() {
+    try {
+        const response = await fetch('api.php'); // Appel vers notre fichier PHP
+        favorites = await response.json();
+        // Une fois chargé, on rafraîchit l'affichage
+        renderSurahs(allSurahs);
+    } catch (error) {
+        console.error("Erreur chargement favoris MySQL:", error);
+    }
+}
 // Lancer
-getSurahs();
+// Lancer
+getSurahs().then(() => {
+    loadFavorites(); // On charge les favoris APRÈS avoir chargé les sourates
+});
