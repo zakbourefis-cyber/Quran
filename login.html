@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Le Saint Coran</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="login-body">
+
+    <div class="login-container">
+        <h2 style="color:var(--primary-color); margin-bottom: 20px;">Bienvenue</h2>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">Se connecter</div>
+            <div class="tab" onclick="switchTab('register')">S'inscrire</div>
+        </div>
+
+        <div id="login-form" class="form-content active">
+            <div class="input-group">
+                <i class="fa-solid fa-user"></i>
+                <input type="text" id="login-user" placeholder="Nom d'utilisateur">
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="login-pass" placeholder="Mot de passe">
+            </div>
+            <button class="btn-full" onclick="handleLogin()">Entrer</button>
+        </div>
+
+        <div id="register-form" class="form-content">
+            <div class="input-group">
+                <i class="fa-solid fa-user-plus"></i>
+                <input type="text" id="reg-user" placeholder="Choisir un pseudo">
+            </div>
+            <div class="input-group">
+                <i class="fa-solid fa-lock"></i>
+                <input type="password" id="reg-pass" placeholder="Choisir un mot de passe">
+            </div>
+            <button class="btn-full btn-blue" onclick="handleRegister()">Créer mon compte</button>
+        </div>
+
+        <a href="index.html" class="back-link">← Retour au Coran sans se connecter</a>
+    </div>
+
+    <script>
+        // --- LOGIQUE INTERNE DE LA PAGE LOGIN ---
+
+        // 1. Gestion des Onglets
+        function switchTab(tab) {
+            // Reset classes
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
+
+            // Activate select
+            if (tab === 'login') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('login-form').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('register-form').classList.add('active');
+            }
+        }
+
+        // 2. Connexion
+        async function handleLogin() {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+
+            if(!user || !pass) return alert("Veuillez remplir les champs");
+
+            const res = await fetch('auth.php?action=login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                // Redirection vers l'accueil
+                window.location.href = 'index.html';
+            } else {
+                alert("Erreur : " + data.message);
+            }
+        }
+
+        // 3. Inscription
+        async function handleRegister() {
+            const user = document.getElementById('reg-user').value;
+            const pass = document.getElementById('reg-pass').value;
+
+            if(!user || !pass) return alert("Veuillez remplir les champs");
+
+            const res = await fetch('auth.php?action=register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert("Compte créé avec succès ! Connectez-vous maintenant.");
+                switchTab('login'); // On bascule sur l'onglet connexion
+            } else {
+                alert("Erreur : " + data.message);
+            }
+        }
+    </script>
+</body>
+</html>

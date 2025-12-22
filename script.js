@@ -2,27 +2,25 @@
 let allSurahs = [];
 let favorites = []; 
 let currentAudio = null;
-let isLoggedIn = false; // Pour savoir si on affiche les cœurs rouges ou non
+let isLoggedIn = false;
 
 const container = document.getElementById('surah-container');
 const modal = document.getElementById('verse-modal');
 const modalBody = document.getElementById('modal-body');
 const modalTitle = document.getElementById('modal-title');
 
-// Éléments d'interface Auth
-const loginDiv = document.getElementById('login-forms');
-const userInfoDiv = document.getElementById('user-info');
+// Éléments d'interface
+const btnLoginLink = document.getElementById('btn-login-link');
+const userLoggedInDiv = document.getElementById('user-logged-in');
 const welcomeMsg = document.getElementById('welcome-msg');
-const userField = document.getElementById('username');
-const passField = document.getElementById('password');
 
-// --- 1. DÉMARRAGE : Vérifier la session et charger les sourates ---
+// --- 1. DÉMARRAGE ---
 document.addEventListener('DOMContentLoaded', async () => {
-    await checkSession(); // On vérifie d'abord qui est là
-    await getSurahs();    // Ensuite on charge le Coran
+    await checkSession(); // Vérifier qui est là
+    await getSurahs();    // Charger le Coran
 });
 
-// --- 2. GESTION AUTHENTIFICATION (Appels vers auth.php) ---
+// --- 2. GESTION SESSION ---
 
 async function checkSession() {
     try {
@@ -30,70 +28,24 @@ async function checkSession() {
         const data = await res.json();
         
         if (data.logged_in) {
-            userConnected(data.username);
+            isLoggedIn = true;
+            // Interface Connecté
+            if(btnLoginLink) btnLoginLink.style.display = 'none';
+            if(userLoggedInDiv) userLoggedInDiv.style.display = 'inline-block';
+            if(welcomeMsg) welcomeMsg.innerText = `Salam, ${data.username}`;
+            loadFavorites();
         } else {
-            userDisconnected();
+            isLoggedIn = false;
+            // Interface Visiteur
+            if(btnLoginLink) btnLoginLink.style.display = 'inline-block';
+            if(userLoggedInDiv) userLoggedInDiv.style.display = 'none';
         }
     } catch (e) { console.error("Erreur auth", e); }
 }
 
-async function login() {
-    const user = userField.value;
-    const pass = passField.value;
-
-    if(!user || !pass) return alert("Veuillez remplir les champs");
-
-    const res = await fetch('auth.php?action=login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ username: user, password: pass })
-    });
-    const data = await res.json();
-
-    if (data.success) {
-        userConnected(data.username);
-        userField.value = ''; passField.value = ''; // Vider les champs
-    } else {
-        alert("Erreur : " + data.message);
-    }
-}
-
-async function register() {
-    const user = userField.value;
-    const pass = passField.value;
-
-    if(!user || !pass) return alert("Veuillez remplir les champs");
-
-    const res = await fetch('auth.php?action=register', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ username: user, password: pass })
-    });
-    const data = await res.json();
-
-    alert(data.message); // "Compte créé !" ou "Erreur"
-}
-
 async function logout() {
     await fetch('auth.php?action=logout');
-    userDisconnected();
-}
-
-// --- Fonctions d'interface (UI) ---
-function userConnected(name) {
-    isLoggedIn = true;
-    loginDiv.style.display = 'none';
-    userInfoDiv.style.display = 'block';
-    welcomeMsg.innerText = `Salam, ${name}`;
-    loadFavorites(); // Charger les favoris de cet utilisateur
-}
-
-function userDisconnected() {
-    isLoggedIn = false;
-    loginDiv.style.display = 'block';
-    userInfoDiv.style.display = 'none';
-    favorites = []; // Vider les favoris locaux
-    renderSurahs(allSurahs); // Rafraîchir l'affichage (enlève les cœurs rouges)
+    window.location.reload(); // Recharger la page pour remettre à zéro
 }
 
 // --- 3. CHARGEMENT DONNÉES ---
@@ -152,25 +104,24 @@ function renderSurahs(list) {
 async function toggleFavorite(event, id) {
     event.stopPropagation();
     
-    // SÉCURITÉ : Si pas connecté, on bloque
     if (!isLoggedIn) {
-        alert("Connectez-vous pour sauvegarder vos favoris !");
+        // Rediriger vers la page de login si on clique sur favori sans être connecté
+        if(confirm("Vous devez être connecté pour gérer vos favoris. Aller à la connexion ?")) {
+            window.location.href = 'login.html';
+        }
         return;
     }
 
-    // Mise à jour visuelle immédiate
     if (favorites.includes(id)) {
         favorites = favorites.filter(favId => favId !== id);
     } else {
         favorites.push(id);
     }
     
-    // Rafraîchir l'interface
     const activeFilter = document.querySelector('.btn-filter.active').innerText;
     if (activeFilter.includes('Favoris')) filterSurahs('fav');
     else renderSurahs(allSurahs);
 
-    // Envoi BDD
     try {
         await fetch('api.php', {
             method: 'POST',
@@ -186,7 +137,9 @@ function filterSurahs(type) {
 
     if (type === 'fav') {
         if(!isLoggedIn) {
-            alert("Vous devez être connecté.");
+            if(confirm("Connectez-vous pour voir vos favoris.")) {
+                window.location.href = 'login.html';
+            }
             return;
         }
         const favList = allSurahs.filter(s => favorites.includes(s.id));
@@ -196,7 +149,7 @@ function filterSurahs(type) {
     }
 }
 
-// --- 5. LECTURE & AUDIO (Reste inchangé) ---
+// --- 5. LECTURE & AUDIO ---
 
 async function loadSurahDetails(id, nameFr, nameAr) {
     modal.style.display = "flex";
