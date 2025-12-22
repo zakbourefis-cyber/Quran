@@ -1,55 +1,39 @@
 <?php
-// api.php - Ce fichier sert de pont entre JS et MySQL
-
+session_start(); // Important : pour savoir qui est connecté
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
 
-// 1. Connexion à la Base de Données
-$host = "localhost";
-$user = "root"; // Par défaut sur XAMPP
-$pass = "";     // Par défaut vide sur XAMPP
-$db   = "quran_app";
-
-$conn = new mysqli($host, $user, $pass, $db);
-
-if ($conn->connect_error) {
-    die(json_encode(["error" => "Erreur de connexion : " . $conn->connect_error]));
+// Si pas connecté, on arrête tout de suite
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode([]); // Renvoie liste vide
+    exit;
 }
 
-// 2. Récupérer les données envoyées par le JS
+$userId = $_SESSION['user_id'];
+$conn = new mysqli("localhost", "root", "", "quran_app");
 $method = $_SERVER['REQUEST_METHOD'];
 $input = json_decode(file_get_contents('php://input'), true);
 
-// --- SCÉNARIO 1 : On demande la liste des favoris (GET) ---
+// --- GET : Récupérer MES favoris ---
 if ($method === 'GET') {
-    $result = $conn->query("SELECT surah_id FROM favorites");
+    // On filtre par user_id
+    $result = $conn->query("SELECT surah_id FROM favorites WHERE user_id = $userId");
     $favorites = [];
-    
-    while($row = $result->fetch_assoc()) {
-        $favorites[] = (int)$row['surah_id'];
-    }
-    
+    while($row = $result->fetch_assoc()) $favorites[] = (int)$row['surah_id'];
     echo json_encode($favorites);
 }
 
-// --- SCÉNARIO 2 : On ajoute/enlève un favori (POST) ---
+// --- POST : Ajouter/Supprimer UN DE MES favoris ---
 if ($method === 'POST') {
-    $surahId = $input['surah_id'];
+    $surahId = (int)$input['surah_id'];
 
-    // Vérifier si le favori existe déjà
-    $check = $conn->query("SELECT id FROM favorites WHERE surah_id = $surahId");
+    // Vérifier s'il existe déjà POUR CET UTILISATEUR
+    $check = $conn->query("SELECT id FROM favorites WHERE surah_id = $surahId AND user_id = $userId");
 
     if ($check->num_rows > 0) {
-        // Il existe -> On le supprime
-        $conn->query("DELETE FROM favorites WHERE surah_id = $surahId");
-        echo json_encode(["status" => "removed", "id" => $surahId]);
+        $conn->query("DELETE FROM favorites WHERE surah_id = $surahId AND user_id = $userId");
     } else {
-        // Il n'existe pas -> On l'ajoute
-        $conn->query("INSERT INTO favorites (surah_id) VALUES ($surahId)");
-        echo json_encode(["status" => "added", "id" => $surahId]);
+        $conn->query("INSERT INTO favorites (surah_id, user_id) VALUES ($surahId, $userId)");
     }
 }
-
 $conn->close();
 ?>
