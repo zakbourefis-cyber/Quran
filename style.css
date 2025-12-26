@@ -409,155 +409,33 @@ footer {
     }
 }
 
-/* Conteneur principal */
-.prayer-widget {
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  max-width: 400px; /* Ou 100% selon ton container */
-  margin: 0 auto;
-  text-align: center;
-  font-family: sans-serif;
+/* Le conteneur global des horaires */
+#prayer-container {
+    display: block; /* Toujours visible */
+    margin-bottom: 40px; /* Espace entre les horaires et le Hadith */
+    width: 100%;
 }
 
-/* Partie "Héro" (Grand affichage) */
-.hero-section {
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.hero-section h3 {
-  color: #666;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.hero-name {
-  font-size: 2.5rem;
-  color: #2e7d32; /* Vert de ton image */
-  margin: 0;
-  font-weight: bold;
-}
-
-.hero-time {
-  font-size: 1.5rem;
-  color: #333;
-  margin: 5px 0 0 0;
-}
-
-/* Grille des petites cases */
-.prayers-grid {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.prayer-card {
-  display: flex;
-  flex-direction: column;
-  background: #f5f5f5;
-  padding: 8px 4px;
-  border-radius: 8px;
-  flex: 1; /* Largeur égale pour tous */
-  align-items: center;
-}
-
-/* Optionnel : Mettre en valeur la prière active dans la petite liste */
-.prayer-card.active {
-  background: #e8f5e9; /* Vert très clair */
-  border: 1px solid #2e7d32;
-}
-
-.prayer-name {
-  font-size: 0.75rem;
-  color: #2e7d32;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-
-.prayer-time {
-  font-size: 0.9rem;
-  color: #333;
-  font-weight: 500;
-}
-
-.footer-note {
-  font-size: 0.7rem;
-  color: #999;
-  margin-top: 15px;
-  font-style: italic;
-}
-
-/* Conteneur principal de la liste */
+/* On s'assure que le widget lui-même est bien centré (reprise du CSS précédent) */
 #prayer-times-list {
-    text-align: center;
-    font-family: sans-serif;
-    color: #333;
-}
-
-/* --- PARTIE DU HAUT (GRAND) --- */
-.prayer-hero {
-    margin-bottom: 25px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
-}
-
-.hero-label {
-    font-size: 0.9rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0;
-}
-
-.hero-name {
-    font-size: 3rem; /* Très grand */
-    color: #2e7d32;  /* Vert */
-    margin: 5px 0;
-    font-weight: 800;
-}
-
-.hero-time {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #444;
-}
-
-/* --- PARTIE DU BAS (PETITE GRILLE) --- */
-.prayer-grid {
     display: flex;
-    justify-content: space-between; /* Espacement égal */
-    gap: 8px;
-}
-
-.prayer-card {
-    background: #f4f4f4;
-    border-radius: 8px;
-    padding: 10px 5px;
-    flex: 1; /* Chaque case prend la même largeur */
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    font-size: 0.85rem;
-    transition: all 0.2s;
+    justify-content: center;
+    gap: 40px;
+    
+    max-width: 900px;
+    margin: 0 auto; /* Centré horizontalement */
+    padding: 30px;
+    
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
-/* Style spécifique pour la case active (celle qui est la prochaine) */
-.prayer-card.active {
-    background-color: #e8f5e9; /* Fond vert clair */
-    border: 1px solid #2e7d32;
-    color: #2e7d32;
-}
-
-.card-name {
-    font-weight: bold;
-    margin-bottom: 4px;
-    font-size: 0.75rem; /* Nom plus petit */
-}
-
-.card-time {
-    font-size: 0.95rem; /* Heure lisible */
+/* Responsive mobile inchangé */
+@media (max-width: 768px) {
+    #prayer-times-list {
+        flex-direction: column;
+        gap: 20px;
+    }
 }

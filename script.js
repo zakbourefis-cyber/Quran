@@ -295,60 +295,79 @@ function initHadithSystem() {
     }
 }
 
-// --- 6. GESTION DES HORAIRES DE PRIÈRE ---
+    // --- 6. GESTION DES HORAIRES DE PRIÈRE ---
 
-function showPrayerTimes() {
-    // 1. Gérer l'affichage des onglets
-    document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
-    // On cible le 3ème bouton (celui qu'on vient d'ajouter)
-    document.querySelectorAll('.btn-filter')[2].classList.add('active');
+ // --- LANCEMENT AUTOMATIQUE DES HORAIRES ---
+// On ne dépend plus d'un clic sur un bouton, on lance direct au chargement.
 
-    // Cacher les sourates et afficher les prières
-    document.getElementById('surah-container').style.display = 'none';
-    document.getElementById('prayer-container').style.display = 'block';
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. On s'assure que le conteneur est visible
+    const prayerContainer = document.getElementById('prayer-container');
+    if (prayerContainer) {
+        prayerContainer.style.display = 'block'; 
+    }
 
-    // 2. Lancer la géolocalisation
+    // 2. On lance la géolocalisation immédiatement
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(fetchPrayerTimes, handleLocationError);
     } else {
-        alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        // Fallback si pas de géoloc (optionnel: mettre une ville par défaut)
+        console.log("Géolocalisation non supportée");
     }
-}
+});
 
-// Fonction appelée si on a la position
-async function fetchPrayerTimes(position) {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-    const date = Math.floor(Date.now() / 1000); // Timestamp actuel
+// Note : Conserve tes fonctions 'fetchPrayerTimes', 'displayPrayers', 'ajusterHeure' 
+// et 'handleLocationError' telles quelles, elles fonctionnent très bien.
+// Tu peux supprimer la fonction 'showPrayerTimes' qui gérait les onglets.
 
-    // METHODE 12 = UOIF (France)
-    const url = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=12&iso8601=true`;
+    // Fonction appelée si on a la position
+    async function fetchPrayerTimes(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const date = Math.floor(Date.now() / 1000); // Timestamp actuel
 
-    try {
-        document.getElementById('prayer-city').innerText = "Chargement...";
-        
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        displayPrayers(data.data);
-    } catch (error) {
-        console.error("Erreur API Adhan", error);
-        document.getElementById('prayer-city').innerText = "Erreur de connexion";
+        // METHODE 12 = UOIF (France)
+    const url = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=3&iso8601=true`;
+    
+        try {
+            document.getElementById('prayer-city').innerText = "Chargement...";
+            
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            displayPrayers(data.data);
+        } catch (error) {
+            console.error("Erreur API Adhan", error);
+            document.getElementById('prayer-city').innerText = "Erreur de connexion";
+        }
     }
-}
 
-function displayPrayers(data) {
+    function displayPrayers(data) {
     const timings = data.timings;
     const dateReadable = data.date.readable;
+
+    // --- CONFIGURATION DES CORRECTIONS (en minutes) ---
+    // Basé sur tes observations :
+    // Fajr: 06:26 -> 06:45 (+19 min)
+    // Dhuhr: 12:34 -> 12:38 (+4 min)
+    // Maghrib: 16:54 -> 16:57 (+3 min)
+    // Isha: 18:37 -> 18:27 (-10 min)
+    const CORRECTIONS = {
+        'Fajr': 19,
+        'Dhuhr': 4,
+        'Asr': 0,
+        'Maghrib': 3,
+        'Isha': -10
+    };
 
     // 1. Mise à jour des infos générales
     document.getElementById('prayer-city').innerText = "📍 Votre Position"; 
     document.getElementById('prayer-date').innerText = dateReadable;
 
     const listDiv = document.getElementById('prayer-times-list');
-    listDiv.innerHTML = ''; // On vide la liste précédente
+    listDiv.innerHTML = ''; 
 
-    // 2. Configuration : On définit les prières voulues (Sans Chourouk)
+    // 2. Configuration des prières
     const prayersDef = [
         { key: 'Fajr', label: 'Fajr' },
         { key: 'Dhuhr', label: 'Dhuhr' },
@@ -357,28 +376,46 @@ function displayPrayers(data) {
         { key: 'Isha', label: 'Isha' }
     ];
 
+    // --- FONCTION UTILITAIRE POUR AJOUTER LES MINUTES ---
+    const ajusterHeure = (dateObj, minutes) => {
+        if (!minutes) return dateObj;
+        // On crée une nouvelle date pour ne pas modifier l'originale par erreur
+        const newDate = new Date(dateObj); 
+        newDate.setMinutes(newDate.getMinutes() + minutes);
+        return newDate;
+    };
+
     // 3. Trouver la prochaine prière
     const now = new Date();
     let nextPrayer = null;
 
-    // On cherche la première prière dont l'heure est dans le futur
-    for (const p of prayersDef) {
-        // L'API renvoie un format ISO date complète grâce à iso8601=true
-        const timeObj = new Date(timings[p.key]); 
+    // Pré-calculer les dates ajustées pour les utiliser partout
+    const adjustedPrayers = prayersDef.map(p => {
+        // L'API renvoie l'heure brute
+        const rawDate = new Date(timings[p.key]);
+        // On applique ta correction
+        const fixedDate = ajusterHeure(rawDate, CORRECTIONS[p.key]);
         
-        if (timeObj > now) {
-            nextPrayer = { ...p, timeObj: timeObj };
-            break; // On a trouvé la prochaine, on arrête de chercher
+        return {
+            ...p,
+            timeObj: fixedDate // C'est cette date corrigée qu'on utilisera
+        };
+    });
+
+    // Boucle pour trouver la prochaine prière (sur les heures corrigées)
+    for (const p of adjustedPrayers) {
+        if (p.timeObj > now) {
+            nextPrayer = p;
+            break;
         }
     }
 
-    // Si on n'a rien trouvé (il est tard, après Isha), la prochaine est Fajr (le 1er de la liste)
+    // Si fin de journée, la prochaine est Fajr (le premier de la liste)
     if (!nextPrayer) {
-        const firstP = prayersDef[0];
-        nextPrayer = { ...firstP, timeObj: new Date(timings[firstP.key]) };
+        nextPrayer = adjustedPrayers[0];
     }
 
-    // Fonction utilitaire pour avoir juste l'heure "HH:MM"
+    // Fonction affichage HH:MM
     const formatHeure = (dateObj) => {
         return dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     };
@@ -386,63 +423,61 @@ function displayPrayers(data) {
     // --- CONSTRUCTION DU HTML ---
     let html = '';
 
-    // A. Bloc HERO (La prochaine prière en grand)
+    // A. Bloc HERO (La prochaine prière)
     html += `
         <div class="prayer-hero">
             <h3 class="hero-label">Prochaine Prière</h3>
             <h1 class="hero-name">${nextPrayer.label}</h1>
             <div class="hero-time">${formatHeure(nextPrayer.timeObj)}</div>
+            ${CORRECTIONS[nextPrayer.key] !== 0 ? '<small style="font-size:0.7em; opacity:0.7">(Ajusté mosquée)</small>' : ''}
         </div>
     `;
 
-    // B. Bloc GRILLE (Les autres prières en petit en bas)
+    // B. Bloc GRILLE
     html += '<div class="prayer-grid">';
     
-    prayersDef.forEach(p => {
-        const pDate = new Date(timings[p.key]);
-        // On ajoute une classe 'active' si c'est la prière affichée en grand
+    adjustedPrayers.forEach(p => {
         const isActive = (p.key === nextPrayer.key) ? 'active' : '';
 
         html += `
             <div class="prayer-card ${isActive}">
                 <span class="card-name">${p.label}</span>
-                <span class="card-time">${formatHeure(pDate)}</span>
+                <span class="card-time">${formatHeure(p.timeObj)}</span>
             </div>
         `;
     });
     html += '</div>';
 
-    // Injection dans la page
     listDiv.innerHTML = html;
 }
 
-    prayersToShow.forEach(p => {
-        // L'API renvoie l'heure au format "HH:MM (CET)", on nettoie pour garder HH:MM
-        let time = timings[p.key].split(' ')[0]; 
+        prayersToShow.forEach(p => {
+            // L'API renvoie l'heure au format "HH:MM (CET)", on nettoie pour garder HH:MM
+            let time = timings[p.key].split(' ')[0]; 
 
-        const div = document.createElement('div');
-        div.className = 'prayer-item';
-        div.innerHTML = `
-            <span class="prayer-name">${p.label}</span>
-            <span class="prayer-time">${time}</span>
-        `;
-        listDiv.appendChild(div);
-    });
+            const div = document.createElement('div');
+            div.className = 'prayer-item';
+            div.innerHTML = `
+                <span class="prayer-name">${p.label}</span>
+                <span class="prayer-time">${time}</span>
+            `;
+            listDiv.appendChild(div);
+        });
 
 
-function handleLocationError(error) {
-    let msg = "Erreur inconnue.";
-    switch(error.code) {
-        case error.PERMISSION_DENIED:
-            msg = "Vous avez refusé la géolocalisation.";
-            break;
-        case error.POSITION_UNAVAILABLE:
-            msg = "Position indisponible.";
-            break;
-        case error.TIMEOUT:
-            msg = "Délai d'attente dépassé.";
-            break;
+    function handleLocationError(error) {
+        let msg = "Erreur inconnue.";
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                msg = "Vous avez refusé la géolocalisation.";
+                break;
+            case error.POSITION_UNAVAILABLE:
+                msg = "Position indisponible.";
+                break;
+            case error.TIMEOUT:
+                msg = "Délai d'attente dépassé.";
+                break;
+        }
+        document.getElementById('prayer-city').innerText = "Erreur";
+        document.getElementById('prayer-times-list').innerHTML = `<p style="color:red;">${msg}</p>`;
     }
-    document.getElementById('prayer-city').innerText = "Erreur";
-    document.getElementById('prayer-times-list').innerHTML = `<p style="color:red;">${msg}</p>`;
-}
