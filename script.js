@@ -69,40 +69,54 @@ async function fetchPrayerTimes(position) {
     const lon = position.coords.longitude;
     const date = Math.floor(Date.now() / 1000); 
 
-    // URL API (Méthode 3 = MWL, mais on applique nos propres corrections)
-    const url = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=3&iso8601=true`;
+    // URL pour les horaires
+    const adhanUrl = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=3&iso8601=true`;
+    
+    // URL pour le nom de la ville (Reverse Geocoding)
+    const geoUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
 
     try {
         const cityEl = document.getElementById('prayer-city');
         if(cityEl) cityEl.innerText = "Chargement...";
         
-        const res = await fetch(url);
-        const data = await res.json();
+        // 1. On récupère les horaires
+        const resAdhan = await fetch(adhanUrl);
+        const dataAdhan = await resAdhan.json();
+
+        // 2. On récupère la ville (en arrière-plan pour ne pas bloquer)
+        let villeTrouvee = "Votre Position";
+        try {
+            const resGeo = await fetch(geoUrl);
+            const dataGeo = await resGeo.json();
+            // On cherche : Ville OU Village OU Bourgade
+            villeTrouvee = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || dataGeo.address.municipality || "Votre Position";
+        } catch (e) {
+            console.log("Impossible de trouver le nom de la ville");
+        }
         
-        displayPrayers(data.data);
+        // 3. On envoie tout à l'affichage
+        displayPrayers(dataAdhan.data, villeTrouvee);
+
     } catch (error) {
-        console.error("Erreur API Adhan", error);
+        console.error("Erreur API", error);
         document.getElementById('prayer-city').innerText = "Erreur de connexion";
     }
 }
 
-function displayPrayers(data) {
+function displayPrayers(data, cityName) { // <--- Nouveau paramètre ici
     const timings = data.timings;
     const dateReadable = data.date.readable;
 
-    // --- TES CORRECTIONS (Minutes) ---
     const CORRECTIONS = {
-        'Fajr': 19,
-        'Dhuhr': 4,
-        'Asr': 0,
-        'Maghrib': 3,
-        'Isha': -10
+        'Fajr': 19, 'Dhuhr': 4, 'Asr': 0, 'Maghrib': 3, 'Isha': -10
     };
 
     // Mise à jour textes
     const cityEl = document.getElementById('prayer-city');
     const dateEl = document.getElementById('prayer-date');
-    if(cityEl) cityEl.innerText = "📍 Votre Position"; 
+    
+    // ICI : On affiche le vrai nom de la ville
+    if(cityEl) cityEl.innerText = `📍 ${cityName}`; 
     if(dateEl) dateEl.innerText = dateReadable;
 
     const listDiv = document.getElementById('prayer-times-list');
@@ -117,7 +131,6 @@ function displayPrayers(data) {
         { key: 'Isha', label: 'Isha' }
     ];
 
-    // Fonction d'ajustement
     const ajusterHeure = (dateObj, minutes) => {
         if (!minutes) return dateObj;
         const newDate = new Date(dateObj); 
@@ -128,40 +141,37 @@ function displayPrayers(data) {
     const now = new Date();
     let nextPrayer = null;
 
-    // Calcul des horaires ajustés
     const adjustedPrayers = prayersDef.map(p => {
         const rawDate = new Date(timings[p.key]);
         const fixedDate = ajusterHeure(rawDate, CORRECTIONS[p.key]);
         return { ...p, timeObj: fixedDate };
     });
 
-    // Trouver la prochaine prière
     for (const p of adjustedPrayers) {
         if (p.timeObj > now) {
             nextPrayer = p;
             break;
         }
     }
-    if (!nextPrayer) nextPrayer = adjustedPrayers[0]; // Si fin de journée -> Fajr demain
+    if (!nextPrayer) nextPrayer = adjustedPrayers[0];
 
     const formatHeure = (dateObj) => {
         return dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     };
 
-    // --- CONSTRUCTION HTML (DASHBOARD) ---
     let html = '';
 
-    // Partie GAUCHE (Hero)
+    // Hero
     html += `
         <div class="prayer-hero">
             <h3 class="hero-label">Prochaine Prière</h3>
             <h1 class="hero-name">${nextPrayer.label}</h1>
             <div class="hero-time">${formatHeure(nextPrayer.timeObj)}</div>
-            ${CORRECTIONS[nextPrayer.key] !== 0 ? '<small style="font-size:0.7em; opacity:0.7">(Ajusté mosquée)</small>' : ''}
+            ${CORRECTIONS[nextPrayer.key] !== 0 ? '<small style="font-size:0.7em; opacity:0.7"></small>' : ''}
         </div>
     `;
 
-    // Partie DROITE (Grille)
+    // Grille
     html += '<div class="prayer-grid">';
     adjustedPrayers.forEach(p => {
         const isActive = (p.key === nextPrayer.key) ? 'active' : '';
