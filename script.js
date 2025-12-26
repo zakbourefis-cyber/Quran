@@ -183,7 +183,8 @@ async function toggleFavorite(event, id) {
 function filterSurahs(type) {
     document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-
+    document.getElementById('prayer-container').style.display = 'none';
+    document.getElementById('surah-container').style.display = 'grid';
     if (type === 'fav') {
         if(!isLoggedIn) {
             if(confirm("Connectez-vous pour voir vos favoris.")) {
@@ -292,4 +293,156 @@ function initHadithSystem() {
         // Petit message au survol pour guider l'utilisateur
         container.title = "Cliquez pour lire un autre hadith";
     }
+}
+
+// --- 6. GESTION DES HORAIRES DE PRIÈRE ---
+
+function showPrayerTimes() {
+    // 1. Gérer l'affichage des onglets
+    document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+    // On cible le 3ème bouton (celui qu'on vient d'ajouter)
+    document.querySelectorAll('.btn-filter')[2].classList.add('active');
+
+    // Cacher les sourates et afficher les prières
+    document.getElementById('surah-container').style.display = 'none';
+    document.getElementById('prayer-container').style.display = 'block';
+
+    // 2. Lancer la géolocalisation
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(fetchPrayerTimes, handleLocationError);
+    } else {
+        alert("La géolocalisation n'est pas supportée par votre navigateur.");
+    }
+}
+
+// Fonction appelée si on a la position
+async function fetchPrayerTimes(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    const date = Math.floor(Date.now() / 1000); // Timestamp actuel
+
+    // METHODE 12 = UOIF (France)
+    const url = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=12&iso8601=true`;
+
+    try {
+        document.getElementById('prayer-city').innerText = "Chargement...";
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        displayPrayers(data.data);
+    } catch (error) {
+        console.error("Erreur API Adhan", error);
+        document.getElementById('prayer-city').innerText = "Erreur de connexion";
+    }
+}
+
+function displayPrayers(data) {
+    const timings = data.timings;
+    const dateReadable = data.date.readable;
+
+    // 1. Mise à jour des infos générales
+    document.getElementById('prayer-city').innerText = "📍 Votre Position"; 
+    document.getElementById('prayer-date').innerText = dateReadable;
+
+    const listDiv = document.getElementById('prayer-times-list');
+    listDiv.innerHTML = ''; // On vide la liste précédente
+
+    // 2. Configuration : On définit les prières voulues (Sans Chourouk)
+    const prayersDef = [
+        { key: 'Fajr', label: 'Fajr' },
+        { key: 'Dhuhr', label: 'Dhuhr' },
+        { key: 'Asr', label: 'Asr' },
+        { key: 'Maghrib', label: 'Maghrib' },
+        { key: 'Isha', label: 'Isha' }
+    ];
+
+    // 3. Trouver la prochaine prière
+    const now = new Date();
+    let nextPrayer = null;
+
+    // On cherche la première prière dont l'heure est dans le futur
+    for (const p of prayersDef) {
+        // L'API renvoie un format ISO date complète grâce à iso8601=true
+        const timeObj = new Date(timings[p.key]); 
+        
+        if (timeObj > now) {
+            nextPrayer = { ...p, timeObj: timeObj };
+            break; // On a trouvé la prochaine, on arrête de chercher
+        }
+    }
+
+    // Si on n'a rien trouvé (il est tard, après Isha), la prochaine est Fajr (le 1er de la liste)
+    if (!nextPrayer) {
+        const firstP = prayersDef[0];
+        nextPrayer = { ...firstP, timeObj: new Date(timings[firstP.key]) };
+    }
+
+    // Fonction utilitaire pour avoir juste l'heure "HH:MM"
+    const formatHeure = (dateObj) => {
+        return dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // --- CONSTRUCTION DU HTML ---
+    let html = '';
+
+    // A. Bloc HERO (La prochaine prière en grand)
+    html += `
+        <div class="prayer-hero">
+            <h3 class="hero-label">Prochaine Prière</h3>
+            <h1 class="hero-name">${nextPrayer.label}</h1>
+            <div class="hero-time">${formatHeure(nextPrayer.timeObj)}</div>
+        </div>
+    `;
+
+    // B. Bloc GRILLE (Les autres prières en petit en bas)
+    html += '<div class="prayer-grid">';
+    
+    prayersDef.forEach(p => {
+        const pDate = new Date(timings[p.key]);
+        // On ajoute une classe 'active' si c'est la prière affichée en grand
+        const isActive = (p.key === nextPrayer.key) ? 'active' : '';
+
+        html += `
+            <div class="prayer-card ${isActive}">
+                <span class="card-name">${p.label}</span>
+                <span class="card-time">${formatHeure(pDate)}</span>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    // Injection dans la page
+    listDiv.innerHTML = html;
+}
+
+    prayersToShow.forEach(p => {
+        // L'API renvoie l'heure au format "HH:MM (CET)", on nettoie pour garder HH:MM
+        let time = timings[p.key].split(' ')[0]; 
+
+        const div = document.createElement('div');
+        div.className = 'prayer-item';
+        div.innerHTML = `
+            <span class="prayer-name">${p.label}</span>
+            <span class="prayer-time">${time}</span>
+        `;
+        listDiv.appendChild(div);
+    });
+
+
+function handleLocationError(error) {
+    let msg = "Erreur inconnue.";
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            msg = "Vous avez refusé la géolocalisation.";
+            break;
+        case error.POSITION_UNAVAILABLE:
+            msg = "Position indisponible.";
+            break;
+        case error.TIMEOUT:
+            msg = "Délai d'attente dépassé.";
+            break;
+    }
+    document.getElementById('prayer-city').innerText = "Erreur";
+    document.getElementById('prayer-times-list').innerHTML = `<p style="color:red;">${msg}</p>`;
 }
