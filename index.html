@@ -16,47 +16,38 @@
 <body>
 
   <header>
-    
     <h1>Le Saint Coran</h1>
     
     <div id="user-area">
-        
         <a href="login.html" id="btn-login-link" class="btn-login-header">
             <i class="fa-solid fa-user"></i> Se connecter
         </a>
-
         <div id="user-logged-in" style="display:none;">
             <span id="welcome-msg"></span>
-            
             <img id="user-avatar" src="" alt="Profil" class="avatar">
-            
             <button onclick="logout()" class="btn-logout-icon" title="Se déconnecter">
                 <i class="fa-solid fa-right-from-bracket"></i>
             </button>
         </div>
+    </div>
 
+    <div id="prayer-container">
+        <div id="prayer-city">Localisation...</div>
+        <div id="prayer-date"></div>
+        <div id="prayer-times-list"></div>
+    </div>
+
+    <div id="hadith-container" class="hadith-card">
+        <h3>Hadith du jour</h3>
+        <blockquote id="hadith-text">Chargement...</blockquote>
+        <cite id="hadith-source"></cite>
     </div>
 
     <div class="controls">
-        <button class="btn-filter" onclick="showPrayerTimes()">Horaires 🕒</button>
-        <button class="btn-filter active" onclick="filterSurahs('all')">Toutes</button>
+        <button class="btn-filter active" onclick="filterSurahs('all')">Toutes les Sourates</button>
         <button class="btn-filter" onclick="filterSurahs('fav')">Mes Favoris ❤</button>
     </div>
 
-    <div id="prayer-container" style="display: none;">
-    <div class="prayer-card-header">
-        <h2 id="prayer-city">Localisation en cours...</h2>
-        <p id="prayer-date">--/--/----</p>
-    </div>
-    <div class="prayer-grid" id="prayer-times-list">
-        </div>
-    <p class="method-info">Calcul selon la méthode UOIF (12°)</p>
-</div>
-<div id="hadith-container" class="hadith-card">
-    <h3>Hadith du jour</h3>
-    <blockquote id="hadith-text">Chargement...</blockquote>
-    <cite id="hadith-source"></cite>
-</div>
 </header>
 
 

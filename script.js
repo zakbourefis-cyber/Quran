@@ -300,22 +300,20 @@ function initHadithSystem() {
  // --- LANCEMENT AUTOMATIQUE DES HORAIRES ---
 // On ne dépend plus d'un clic sur un bouton, on lance direct au chargement.
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. On s'assure que le conteneur est visible
-    const prayerContainer = document.getElementById('prayer-container');
-    if (prayerContainer) {
-        prayerContainer.style.display = 'block'; 
-    }
-
-    // 2. On lance la géolocalisation immédiatement
+// --- 1. DÉMARRAGE AUTOMATIQUE ---
+document.addEventListener('DOMContentLoaded', async () => {
+    initHadithSystem();
+    
+    // On lance les horaires DIRECTEMENT au démarrage
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(fetchPrayerTimes, handleLocationError);
     } else {
-        // Fallback si pas de géoloc (optionnel: mettre une ville par défaut)
         console.log("Géolocalisation non supportée");
     }
-});
 
+    await checkSession(); // Vérifier qui est là
+    await getSurahs();    // Charger le Coran
+});
 // Note : Conserve tes fonctions 'fetchPrayerTimes', 'displayPrayers', 'ajusterHeure' 
 // et 'handleLocationError' telles quelles, elles fonctionnent très bien.
 // Tu peux supprimer la fonction 'showPrayerTimes' qui gérait les onglets.
@@ -346,12 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const timings = data.timings;
     const dateReadable = data.date.readable;
 
-    // --- CONFIGURATION DES CORRECTIONS (en minutes) ---
-    // Basé sur tes observations :
-    // Fajr: 06:26 -> 06:45 (+19 min)
-    // Dhuhr: 12:34 -> 12:38 (+4 min)
-    // Maghrib: 16:54 -> 16:57 (+3 min)
-    // Isha: 18:37 -> 18:27 (-10 min)
     const CORRECTIONS = {
         'Fajr': 19,
         'Dhuhr': 4,
@@ -450,19 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     listDiv.innerHTML = html;
 }
-
-        prayersToShow.forEach(p => {
-            // L'API renvoie l'heure au format "HH:MM (CET)", on nettoie pour garder HH:MM
-            let time = timings[p.key].split(' ')[0]; 
-
-            const div = document.createElement('div');
-            div.className = 'prayer-item';
-            div.innerHTML = `
-                <span class="prayer-name">${p.label}</span>
-                <span class="prayer-time">${time}</span>
-            `;
-            listDiv.appendChild(div);
-        });
 
 
     function handleLocationError(error) {

@@ -439,3 +439,78 @@ footer {
         gap: 20px;
     }
 }
+
+/* --- NOUVEAU STYLE HORAIRES (DASHBOARD) --- */
+#prayer-container {
+    display: block; /* Toujours visible */
+    margin-bottom: 30px; /* Espace avant le Hadith */
+    width: 100%;
+}
+
+#prayer-times-list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px; /* Espace entre le gros bloc et la liste */
+    
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 25px;
+    
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08); /* Ombre douce */
+}
+
+/* Infos Ville/Date cachées ou discrètes (optionnel) */
+#prayer-city, #prayer-date {
+    text-align: center;
+    color: #888;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+/* Partie GAUCHE (Hero) */
+.prayer-hero {
+    text-align: center;
+    padding-right: 30px;
+    border-right: 1px solid #eee;
+    min-width: 180px;
+}
+
+.hero-label { font-size: 0.8em; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+.hero-name { font-size: 3rem; color: #2e7d32; margin: 5px 0; font-weight: 800; }
+.hero-time { font-size: 2rem; font-weight: bold; color: #333; }
+
+/* Partie DROITE (Grille) */
+.prayer-grid {
+    display: flex;
+    gap: 10px;
+}
+
+.prayer-card {
+    background: #f4f6f8;
+    border-radius: 10px;
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70px;
+}
+
+.prayer-card.active {
+    background-color: #e8f5e9;
+    border: 1px solid #2e7d32;
+    transform: translateY(-3px);
+}
+
+.card-name { font-size: 0.75rem; font-weight: bold; color: #555; margin-bottom: 5px; text-transform: uppercase; }
+.card-time { font-size: 1.1rem; font-weight: bold; color: #333; }
+
+/* Mobile */
+@media (max-width: 768px) {
+    #prayer-times-list { flex-direction: column; gap: 20px; }
+    .prayer-hero { border-right: none; border-bottom: 1px solid #eee; padding-right: 0; padding-bottom: 20px; width: 100%; }
+    .prayer-grid { flex-wrap: wrap; justify-content: center; width: 100%; }
+    .prayer-card { flex: 1; }
+}
