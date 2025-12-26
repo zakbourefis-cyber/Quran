@@ -4,6 +4,7 @@ let favorites = [];
 let currentAudio = null;
 let isLoggedIn = false;
 
+// Liste des Hadiths
 const hadithsList = [
     { text: "La richesse ne dépend pas de la quantité de biens, mais la richesse est la richesse de l'âme.", source: "Bukhari et Muslim" },
     { text: "Celui qui ne remercie pas les gens n'a pas remercié Allah.", source: "Abou Daoud" },
@@ -36,24 +37,162 @@ const hadithsList = [
     { text: "Profite de cinq choses avant cinq autres : ta jeunesse avant ta vieillesse, ta santé avant ta maladie, ta richesse avant ta pauvreté, ton temps libre avant ton occupation et ta vie avant ta mort.", source: "Al-Hakim" },
     { text: "Le meilleur des hommes est celui qui est le plus utile aux autres.", source: "Tabarani" }
 ];
+
 const container = document.getElementById('surah-container');
 const modal = document.getElementById('verse-modal');
 const modalBody = document.getElementById('modal-body');
 const modalTitle = document.getElementById('modal-title');
 
-// Éléments d'interface
-const btnLoginLink = document.getElementById('btn-login-link');
-const userLoggedInDiv = document.getElementById('user-logged-in');
-const welcomeMsg = document.getElementById('welcome-msg');
-
-// --- 1. DÉMARRAGE ---
+// --- 1. DÉMARRAGE UNIQUE (Fusionné) ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Lancer le Hadith
     initHadithSystem();
-    await checkSession(); // Vérifier qui est là
-    await getSurahs();    // Charger le Coran
+
+    // 2. Lancer les Horaires (Géolocalisation)
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(fetchPrayerTimes, handleLocationError);
+    } else {
+        console.log("Géolocalisation non supportée ou refusée");
+        document.getElementById('prayer-city').innerText = "Géolocalisation requise";
+    }
+
+    // 3. Lancer la Session et le Coran
+    await checkSession(); 
+    await getSurahs();    
 });
 
-// --- 2. GESTION SESSION ---
+
+// --- 2. GESTION DES HORAIRES (API & AFFICHAGE) ---
+
+async function fetchPrayerTimes(position) {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    const date = Math.floor(Date.now() / 1000); 
+
+    // URL API (Méthode 3 = MWL, mais on applique nos propres corrections)
+    const url = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=3&iso8601=true`;
+
+    try {
+        const cityEl = document.getElementById('prayer-city');
+        if(cityEl) cityEl.innerText = "Chargement...";
+        
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        displayPrayers(data.data);
+    } catch (error) {
+        console.error("Erreur API Adhan", error);
+        document.getElementById('prayer-city').innerText = "Erreur de connexion";
+    }
+}
+
+function displayPrayers(data) {
+    const timings = data.timings;
+    const dateReadable = data.date.readable;
+
+    // --- TES CORRECTIONS (Minutes) ---
+    const CORRECTIONS = {
+        'Fajr': 19,
+        'Dhuhr': 4,
+        'Asr': 0,
+        'Maghrib': 3,
+        'Isha': -10
+    };
+
+    // Mise à jour textes
+    const cityEl = document.getElementById('prayer-city');
+    const dateEl = document.getElementById('prayer-date');
+    if(cityEl) cityEl.innerText = "📍 Votre Position"; 
+    if(dateEl) dateEl.innerText = dateReadable;
+
+    const listDiv = document.getElementById('prayer-times-list');
+    if(!listDiv) return;
+    listDiv.innerHTML = ''; 
+
+    const prayersDef = [
+        { key: 'Fajr', label: 'Fajr' },
+        { key: 'Dhuhr', label: 'Dhuhr' },
+        { key: 'Asr', label: 'Asr' },
+        { key: 'Maghrib', label: 'Maghrib' },
+        { key: 'Isha', label: 'Isha' }
+    ];
+
+    // Fonction d'ajustement
+    const ajusterHeure = (dateObj, minutes) => {
+        if (!minutes) return dateObj;
+        const newDate = new Date(dateObj); 
+        newDate.setMinutes(newDate.getMinutes() + minutes);
+        return newDate;
+    };
+
+    const now = new Date();
+    let nextPrayer = null;
+
+    // Calcul des horaires ajustés
+    const adjustedPrayers = prayersDef.map(p => {
+        const rawDate = new Date(timings[p.key]);
+        const fixedDate = ajusterHeure(rawDate, CORRECTIONS[p.key]);
+        return { ...p, timeObj: fixedDate };
+    });
+
+    // Trouver la prochaine prière
+    for (const p of adjustedPrayers) {
+        if (p.timeObj > now) {
+            nextPrayer = p;
+            break;
+        }
+    }
+    if (!nextPrayer) nextPrayer = adjustedPrayers[0]; // Si fin de journée -> Fajr demain
+
+    const formatHeure = (dateObj) => {
+        return dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // --- CONSTRUCTION HTML (DASHBOARD) ---
+    let html = '';
+
+    // Partie GAUCHE (Hero)
+    html += `
+        <div class="prayer-hero">
+            <h3 class="hero-label">Prochaine Prière</h3>
+            <h1 class="hero-name">${nextPrayer.label}</h1>
+            <div class="hero-time">${formatHeure(nextPrayer.timeObj)}</div>
+            ${CORRECTIONS[nextPrayer.key] !== 0 ? '<small style="font-size:0.7em; opacity:0.7">(Ajusté mosquée)</small>' : ''}
+        </div>
+    `;
+
+    // Partie DROITE (Grille)
+    html += '<div class="prayer-grid">';
+    adjustedPrayers.forEach(p => {
+        const isActive = (p.key === nextPrayer.key) ? 'active' : '';
+        html += `
+            <div class="prayer-card ${isActive}">
+                <span class="card-name">${p.label}</span>
+                <span class="card-time">${formatHeure(p.timeObj)}</span>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    listDiv.innerHTML = html;
+}
+
+function handleLocationError(error) {
+    let msg = "Erreur inconnue.";
+    switch(error.code) {
+        case error.PERMISSION_DENIED: msg = "Géolocalisation refusée."; break;
+        case error.POSITION_UNAVAILABLE: msg = "Position indisponible."; break;
+        case error.TIMEOUT: msg = "Délai dépassé."; break;
+    }
+    const cityEl = document.getElementById('prayer-city');
+    const listEl = document.getElementById('prayer-times-list');
+    
+    if(cityEl) cityEl.innerText = "Erreur";
+    if(listEl) listEl.innerHTML = `<p style="color:red; font-size:0.9em;">${msg}</p>`;
+}
+
+
+// --- 3. GESTION SESSION & UTILISATEUR ---
 
 async function checkSession() {
     try {
@@ -67,23 +206,17 @@ async function checkSession() {
 
         if (data.logged_in) {
             isLoggedIn = true;
-            
             if(btnLink) btnLink.style.display = 'none';
             if(userDiv) userDiv.style.display = 'flex';
             if(msgSpan) msgSpan.innerText = data.username;
 
-// --- MISE À JOUR : On utilise l'avatar de la BDD ---
             if(avatarImg) {
-                // Si l'utilisateur n'a pas choisi (default) ou si c'est vide
                 if (data.avatar === 'default' || !data.avatar) {
-                    // ON GÉNÈRE UN CHAT UNIQUE BASÉ SUR SON PSEUDO
                     avatarImg.src = `https://robohash.org/${data.username}?set=set4`;
                 } else {
-                    // Sinon, on affiche le chat qu'il a choisi dans la grille
                     avatarImg.src = data.avatar;
                 }
             }
-
             loadFavorites();
         } else {
             isLoggedIn = false;
@@ -92,12 +225,14 @@ async function checkSession() {
         }
     } catch (e) { console.error("Erreur auth", e); }
 }
+
 async function logout() {
     await fetch('auth.php?action=logout');
-    window.location.reload(); // Recharger la page pour remettre à zéro
+    window.location.reload(); 
 }
 
-// --- 3. CHARGEMENT DONNÉES ---
+
+// --- 4. CHARGEMENT & AFFICHAGE SOURATES ---
 
 async function getSurahs() {
     try {
@@ -106,7 +241,7 @@ async function getSurahs() {
         allSurahs = data.chapters;
         renderSurahs(allSurahs);
     } catch (error) {
-        container.innerHTML = '<p>Erreur de chargement API.</p>';
+        if(container) container.innerHTML = '<p>Erreur de chargement API.</p>';
     }
 }
 
@@ -115,13 +250,12 @@ async function loadFavorites() {
     try {
         const response = await fetch('api.php');
         favorites = await response.json();
-        renderSurahs(allSurahs);
+        renderSurahs(allSurahs); // Rafraîchir pour afficher les coeurs rouges
     } catch (error) { console.error(error); }
 }
 
-// --- 4. AFFICHAGE & FAVORIS ---
-
 function renderSurahs(list) {
+    if(!container) return;
     container.innerHTML = '';
     
     if(list.length === 0) {
@@ -154,7 +288,6 @@ async function toggleFavorite(event, id) {
     event.stopPropagation();
     
     if (!isLoggedIn) {
-        // Rediriger vers la page de login si on clique sur favori sans être connecté
         if(confirm("Vous devez être connecté pour gérer vos favoris. Aller à la connexion ?")) {
             window.location.href = 'login.html';
         }
@@ -167,9 +300,12 @@ async function toggleFavorite(event, id) {
         favorites.push(id);
     }
     
-    const activeFilter = document.querySelector('.btn-filter.active').innerText;
-    if (activeFilter.includes('Favoris')) filterSurahs('fav');
-    else renderSurahs(allSurahs);
+    const activeBtn = document.querySelector('.btn-filter.active');
+    if (activeBtn && activeBtn.innerText.includes('Favoris')) {
+        filterSurahs('fav');
+    } else {
+        renderSurahs(allSurahs);
+    }
 
     try {
         await fetch('api.php', {
@@ -183,8 +319,8 @@ async function toggleFavorite(event, id) {
 function filterSurahs(type) {
     document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    document.getElementById('prayer-container').style.display = 'none';
-    document.getElementById('surah-container').style.display = 'grid';
+    
+    // On s'assure que tout est visible
     if (type === 'fav') {
         if(!isLoggedIn) {
             if(confirm("Connectez-vous pour voir vos favoris.")) {
@@ -198,6 +334,7 @@ function filterSurahs(type) {
         renderSurahs(allSurahs);
     }
 }
+
 
 // --- 5. LECTURE & AUDIO ---
 
@@ -259,204 +396,31 @@ function closeModal() {
 
 window.onclick = function(event) { if (event.target == modal) closeModal(); }
 
-// --- FONCTION HADITH ---
+
+// --- 6. SYSTEME HADITH ---
+
+let currentHadithIndex = 0;
+
 function afficherHadith() {
     const textEl = document.getElementById('hadith-text');
     const sourceEl = document.getElementById('hadith-source');
-    
     if(!textEl || !sourceEl) return;
 
     const h = hadithsList[currentHadithIndex];
-
-    // Mise à jour du texte
     textEl.innerText = `"${h.text}"`;
     sourceEl.innerText = `- Rapporté par ${h.source}`;
 }
-// Variable pour savoir où on en est
-let currentHadithIndex = 0;
 
 function initHadithSystem() {
-    const container = document.getElementById('hadith-container');
-    
-    if (container) {
-        // 1. Choisir un index de départ aléatoire
+    const hadithContainer = document.getElementById('hadith-container');
+    if (hadithContainer) {
         currentHadithIndex = Math.floor(Math.random() * hadithsList.length);
         afficherHadith();
 
-        // 2. Ajouter l'événement "clic" pour passer au suivant
-        container.onclick = function() {
-            // Passer à l'index suivant (le module % permet de revenir à 0 à la fin de la liste)
+        hadithContainer.onclick = function() {
             currentHadithIndex = (currentHadithIndex + 1) % hadithsList.length;
             afficherHadith();
         };
-        
-        // Petit message au survol pour guider l'utilisateur
-        container.title = "Cliquez pour lire un autre hadith";
+        hadithContainer.title = "Cliquez pour lire un autre hadith";
     }
 }
-
-    // --- 6. GESTION DES HORAIRES DE PRIÈRE ---
-
- // --- LANCEMENT AUTOMATIQUE DES HORAIRES ---
-// On ne dépend plus d'un clic sur un bouton, on lance direct au chargement.
-
-// --- 1. DÉMARRAGE AUTOMATIQUE ---
-document.addEventListener('DOMContentLoaded', async () => {
-    initHadithSystem();
-    
-    // On lance les horaires DIRECTEMENT au démarrage
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(fetchPrayerTimes, handleLocationError);
-    } else {
-        console.log("Géolocalisation non supportée");
-    }
-
-    await checkSession(); // Vérifier qui est là
-    await getSurahs();    // Charger le Coran
-});
-// Note : Conserve tes fonctions 'fetchPrayerTimes', 'displayPrayers', 'ajusterHeure' 
-// et 'handleLocationError' telles quelles, elles fonctionnent très bien.
-// Tu peux supprimer la fonction 'showPrayerTimes' qui gérait les onglets.
-
-    // Fonction appelée si on a la position
-    async function fetchPrayerTimes(position) {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        const date = Math.floor(Date.now() / 1000); // Timestamp actuel
-
-        // METHODE 12 = UOIF (France)
-    const url = `https://api.aladhan.com/v1/timings/${date}?latitude=${lat}&longitude=${lon}&method=3&iso8601=true`;
-    
-        try {
-            document.getElementById('prayer-city').innerText = "Chargement...";
-            
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            displayPrayers(data.data);
-        } catch (error) {
-            console.error("Erreur API Adhan", error);
-            document.getElementById('prayer-city').innerText = "Erreur de connexion";
-        }
-    }
-
-    function displayPrayers(data) {
-    const timings = data.timings;
-    const dateReadable = data.date.readable;
-
-    const CORRECTIONS = {
-        'Fajr': 19,
-        'Dhuhr': 4,
-        'Asr': 0,
-        'Maghrib': 3,
-        'Isha': -10
-    };
-
-    // 1. Mise à jour des infos générales
-    document.getElementById('prayer-city').innerText = "📍 Votre Position"; 
-    document.getElementById('prayer-date').innerText = dateReadable;
-
-    const listDiv = document.getElementById('prayer-times-list');
-    listDiv.innerHTML = ''; 
-
-    // 2. Configuration des prières
-    const prayersDef = [
-        { key: 'Fajr', label: 'Fajr' },
-        { key: 'Dhuhr', label: 'Dhuhr' },
-        { key: 'Asr', label: 'Asr' },
-        { key: 'Maghrib', label: 'Maghrib' },
-        { key: 'Isha', label: 'Isha' }
-    ];
-
-    // --- FONCTION UTILITAIRE POUR AJOUTER LES MINUTES ---
-    const ajusterHeure = (dateObj, minutes) => {
-        if (!minutes) return dateObj;
-        // On crée une nouvelle date pour ne pas modifier l'originale par erreur
-        const newDate = new Date(dateObj); 
-        newDate.setMinutes(newDate.getMinutes() + minutes);
-        return newDate;
-    };
-
-    // 3. Trouver la prochaine prière
-    const now = new Date();
-    let nextPrayer = null;
-
-    // Pré-calculer les dates ajustées pour les utiliser partout
-    const adjustedPrayers = prayersDef.map(p => {
-        // L'API renvoie l'heure brute
-        const rawDate = new Date(timings[p.key]);
-        // On applique ta correction
-        const fixedDate = ajusterHeure(rawDate, CORRECTIONS[p.key]);
-        
-        return {
-            ...p,
-            timeObj: fixedDate // C'est cette date corrigée qu'on utilisera
-        };
-    });
-
-    // Boucle pour trouver la prochaine prière (sur les heures corrigées)
-    for (const p of adjustedPrayers) {
-        if (p.timeObj > now) {
-            nextPrayer = p;
-            break;
-        }
-    }
-
-    // Si fin de journée, la prochaine est Fajr (le premier de la liste)
-    if (!nextPrayer) {
-        nextPrayer = adjustedPrayers[0];
-    }
-
-    // Fonction affichage HH:MM
-    const formatHeure = (dateObj) => {
-        return dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    };
-
-    // --- CONSTRUCTION DU HTML ---
-    let html = '';
-
-    // A. Bloc HERO (La prochaine prière)
-    html += `
-        <div class="prayer-hero">
-            <h3 class="hero-label">Prochaine Prière</h3>
-            <h1 class="hero-name">${nextPrayer.label}</h1>
-            <div class="hero-time">${formatHeure(nextPrayer.timeObj)}</div>
-            ${CORRECTIONS[nextPrayer.key] !== 0 ? '<small style="font-size:0.7em; opacity:0.7">(Ajusté mosquée)</small>' : ''}
-        </div>
-    `;
-
-    // B. Bloc GRILLE
-    html += '<div class="prayer-grid">';
-    
-    adjustedPrayers.forEach(p => {
-        const isActive = (p.key === nextPrayer.key) ? 'active' : '';
-
-        html += `
-            <div class="prayer-card ${isActive}">
-                <span class="card-name">${p.label}</span>
-                <span class="card-time">${formatHeure(p.timeObj)}</span>
-            </div>
-        `;
-    });
-    html += '</div>';
-
-    listDiv.innerHTML = html;
-}
-
-
-    function handleLocationError(error) {
-        let msg = "Erreur inconnue.";
-        switch(error.code) {
-            case error.PERMISSION_DENIED:
-                msg = "Vous avez refusé la géolocalisation.";
-                break;
-            case error.POSITION_UNAVAILABLE:
-                msg = "Position indisponible.";
-                break;
-            case error.TIMEOUT:
-                msg = "Délai d'attente dépassé.";
-                break;
-        }
-        document.getElementById('prayer-city').innerText = "Erreur";
-        document.getElementById('prayer-times-list').innerHTML = `<p style="color:red;">${msg}</p>`;
-    }

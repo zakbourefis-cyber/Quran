@@ -440,10 +440,10 @@ footer {
     }
 }
 
-/* --- NOUVEAU STYLE HORAIRES (DASHBOARD) --- */
+/* --- STYLE HORAIRES DASHBOARD (Le bon) --- */
 #prayer-container {
-    display: block; /* Toujours visible */
-    margin-bottom: 30px; /* Espace avant le Hadith */
+    display: block; 
+    margin-bottom: 30px; 
     width: 100%;
 }
 
@@ -451,18 +451,16 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 40px; /* Espace entre le gros bloc et la liste */
-    
+    gap: 40px; 
     max-width: 900px;
     margin: 0 auto;
     padding: 25px;
-    
     background: #ffffff;
     border-radius: 16px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.08); /* Ombre douce */
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08); 
 }
 
-/* Infos Ville/Date cachées ou discrètes (optionnel) */
+/* Infos Ville/Date */
 #prayer-city, #prayer-date {
     text-align: center;
     color: #888;
